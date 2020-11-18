@@ -7708,7 +7708,7 @@ function write_ws_xml_cell(cell, ref, ws, opts, idx, wb) {
       break;
   }
   var v = writetag('v', escapexml(vv)), o = {r: ref};
-  /* TODO: cell style */
+  // TODO: cell style
   var os = get_cell_style(opts.cellXfs, cell, opts);
   if (os !== 0) o.s = os;
   switch (cell.t) {
@@ -7736,6 +7736,10 @@ function write_ws_xml_cell(cell, ref, ws, opts, idx, wb) {
     cell.t = oldt;
     cell.v = oldv;
   }
+  if(typeof cell.f == "string" && cell.f) {
+		var ff = cell.F && cell.F.slice(0, ref.length) == ref ? {t:"array", ref:cell.F} : null;
+		v = writextag('f', escapexml(cell.f), ff) + (cell.v != null ? v : "");
+	}
   return writextag('c', v, o);
 }
 
