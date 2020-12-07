@@ -7601,6 +7601,32 @@ function parse_ws_xml(data, opts, rels) {
   return s;
 }
 
+function write_ws_xml_conditionalFormattings(conditionalFormattings) {
+  if (conditionalFormattings.length == 0) return "";
+
+  var o = '';
+  for (var i = 0; i != conditionalFormattings.length; ++i) o += write_ws_xml_conditionalFormatting(conditionalFormattings[i]);
+
+  return o;
+}
+
+function write_ws_xml_conditionalFormatting(conditionalFormatting) {
+  if (!conditionalFormatting.ref || !conditionalFormatting.rules || conditionalFormatting.rules.length == 0) return "";
+
+  var o = '<conditionalFormatting sqref="' + conditionalFormatting.ref + '">';
+
+  var sb_exist = (typeof style_builder != 'undefined');
+  var priority = 1;
+  for (var i = 0; i != conditionalFormatting.rules.length; ++i) {
+  	o += '<cfRule type="' + conditionalFormatting.rules[i].t + '" dxfId="' + i + '" priority="' + priority  + '">' + '<formula>' + conditionalFormatting.rules[i].f + '</formula></cfRule>';
+
+  	if (sb_exist) style_builder.addDxf(conditionalFormatting.rules[i].s);
+  	priority++;
+  }
+
+  return o + '</conditionalFormatting>';
+}
+
 function write_ws_xml_merges(merges) {
   if (merges.length == 0) return "";
   var o = '<mergeCells count="' + merges.length + '">';
@@ -7947,6 +7973,7 @@ function write_ws_xml(idx, opts, wb) {
   if (ws['!pageSetup'] !== undefined) o[o.length] = write_ws_xml_pagesetup(ws['!pageSetup']);
   if (ws['!rowBreaks'] !== undefined) o[o.length] = write_ws_xml_row_breaks(ws['!rowBreaks']);
   if (ws['!colBreaks'] !== undefined) o[o.length] = write_ws_xml_col_breaks(ws['!colBreaks']);
+  if (ws['!conditionalFormattings'] !== undefined && ws['!conditionalFormattings'].length > 0) o[o.length] = write_ws_xml_conditionalFormattings(ws['!conditionalFormattings']);
 
   if (o.length > 2) {
     o[o.length] = ('</worksheet>');
@@ -12326,6 +12353,24 @@ var XmlNode = (function () {
         return styles.map(function (style) {
           return self.addStyle(style);
         })
+      },
+
+      addDxf: function (attributes, id) {
+
+        var $dxf = XmlNode('dxf');
+
+        if (attributes.font) {
+        	var $font = XmlNode('font');
+        	$font.append(XmlNode('color').attr('rgb', attributes.font.color.rgb));
+
+        	$dxf.append($font);
+        }
+
+        this.$dxfs.append($dxf);
+
+        var count = +this.$dxfs.children().length;
+        this.$dxfs.attr('count', count);
+        return count - 1;
       },
 
       _duckTypeStyle: function(attributes) {
